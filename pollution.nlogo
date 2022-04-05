@@ -5,33 +5,35 @@ globals [car_poll bus_poll]
 to setup
   ; set up roads
   clear-all
-  ask patches with [pxcor mod 5 = 0 ][
-    set pcolor white
-  ]
-  ask patches with [pycor mod 5 = 0 ][
-    set pcolor white
-  ]
+
+
   set car_poll 1
   set bus_poll 2
   populate_city
 
 end
 
+to set-grid
+
+end
+
 to populate_city
   ; set up cars
-  create-turtles num_turtles [
+  create-turtles num_cars [
     set color blue
     set size 1
     set shape "car"
     set pollution 1
-    move-to one-of patches with [pcolor = white]
+    choose-destination
+    movfahes with [pcolor = white]
   ]
   ; set up buses
-  create-turtles num_turtles [
+  create-turtles num_buses [
     set color yellow
     set shape "truck"
     set size 1
     set pollution 2
+    choose-destination
     move-to one-of patches with [pcolor = white]
   ]
 end
@@ -39,7 +41,6 @@ end
 
 to go
   ask turtles [
-    move-to one-of neighbors4 with [pcolor = white]
     if color = yellow [
       ask patch-here [
         set total_pollution total_pollution + bus_poll
@@ -51,13 +52,34 @@ to go
       ]
     ]
   ]
+  diffuse total_pollution 0.5
+
+  move-turtles-to-destination
+
+
+end
+
+to choose-destination
+  set destination one-of patches with [pcolor = white]
+end
+
+;; taken from Traffic Grid Goal models library
+to move-turtles-to-destination
+  ask turtles [
+    let choices neighbors4 with [ pcolor = white ]
+    let choice min-one-of choices [ distance [ destination ] of myself ]
+    move-to choice
+    if patch-here = destination [
+      choose-destination
+    ]
+  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-210
-10
-647
-448
+202
+31
+639
+469
 -1
 -1
 13.0
@@ -102,11 +124,11 @@ SLIDER
 59
 898
 92
-num_turtles
-num_turtles
+num_cars
+num_cars
 0
 50
-3.0
+1.0
 1
 1
 NIL
@@ -145,6 +167,21 @@ NIL
 NIL
 NIL
 1
+
+SLIDER
+726
+110
+898
+143
+num_buses
+num_buses
+0
+20
+0.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
