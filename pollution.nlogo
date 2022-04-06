@@ -1,34 +1,62 @@
-turtles-own [destination pollution]
-patches-own [total_pollution]
-globals [car_poll bus_poll]
+turtles-own [
+  car?
+  destination
+  pollution
+]
+patches-own [
+  total-pollution
+  popular?
+]
+globals [
+  car-poll
+  bus-poll
+]
 
 to setup
   ; set up roads
   clear-all
-
-
-  set car_poll 1
-  set bus_poll 2
-  populate_city
-
-end
-
-to set-grid
+  create-city
+  set car-poll 1
+  set bus-poll 2
+  populate-city
 
 end
 
-to populate_city
+to create-city
+  ask patches [
+    set total-pollution 0
+    set popular? false
+  ]
+  ;mall
+  ask patches with [pxcor < -5 and pxcor > -10 and pycor < 10 and pycor > 5] [
+    set pcolor blue
+  ]
+  ;office
+  ask patches with [pxcor < 10 and pxcor > 5 and pycor < 0 and pycor > -10] [
+    set pcolor red
+  ]
+  ask patches with [pxcor mod 5 = 0 or pycor mod 5 = 0] [
+    if any? neighbors with [pcolor != black and pcolor != white] [
+      set popular? true
+    ]
+    set pcolor white
+  ]
+end
+
+to populate-city
   ; set up cars
-  create-turtles num_cars [
+  create-turtles num-cars [
+    set car? true
     set color blue
     set size 1
     set shape "car"
     set pollution 1
     choose-destination
-    movfahes with [pcolor = white]
+    move-to one-of patches with [pcolor = white]
   ]
   ; set up buses
-  create-turtles num_buses [
+  create-turtles num-buses [
+    set car? false
     set color yellow
     set shape "truck"
     set size 1
@@ -41,32 +69,28 @@ end
 
 to go
   ask turtles [
-    if color = yellow [
-      ask patch-here [
-        set total_pollution total_pollution + bus_poll
-      ]
-    ]
-    if color = blue [
-      ask patch-here [
-        set total_pollution total_pollution + car_poll
-      ]
+
+    ask patch-here [
+      set total-pollution total-pollution + [pollution] of myself
     ]
   ]
-  diffuse total_pollution 0.5
+  diffuse total-pollution 0.5
 
   move-turtles-to-destination
-
-
 end
 
 to choose-destination
-  set destination one-of patches with [pcolor = white]
+  ifelse random 100 < popular-dest-% [
+    set destination one-of patches with [popular? = true]
+  ] [
+    set destination one-of patches with [pcolor = white]
+  ]
 end
 
 ;; taken from Traffic Grid Goal models library
 to move-turtles-to-destination
   ask turtles [
-    let choices neighbors4 with [ pcolor = white ]
+    let choices neighbors with [ pcolor = white ]
     let choice min-one-of choices [ distance [ destination ] of myself ]
     move-to choice
     if patch-here = destination [
@@ -124,11 +148,11 @@ SLIDER
 59
 898
 92
-num_cars
-num_cars
+num-cars
+num-cars
 0
 50
-1.0
+4.0
 1
 1
 NIL
@@ -173,12 +197,27 @@ SLIDER
 110
 898
 143
-num_buses
-num_buses
+num-buses
+num-buses
 0
 20
-0.0
+2.0
 1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+729
+198
+901
+231
+popular-dest-%
+popular-dest-%
+0
+100
+75.0
+10
 1
 NIL
 HORIZONTAL
