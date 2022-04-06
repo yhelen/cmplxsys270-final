@@ -10,16 +10,18 @@ patches-own [
 globals [
   car-poll
   bus-poll
+  people-per-bus
 ]
 
 to setup
   ; set up roads
   clear-all
   create-city
-  set car-poll 1
-  set bus-poll 2
+  ; pollution ratio of cars to buses of CO
+  set car-poll 2
+  set bus-poll 3
+  set people-per-bus 30
   populate-city
-
 end
 
 to create-city
@@ -44,17 +46,9 @@ to create-city
 end
 
 to populate-city
-  ; set up cars
-  create-turtles num-cars [
-    set car? true
-    set color blue
-    set size 1
-    set shape "car"
-    set pollution 1
-    choose-destination
-    move-to one-of patches with [pcolor = white]
-  ]
-  ; set up buses
+  ; set up vehicles
+  let num-buses ceiling ( %-buses * num-people / people-per-bus )
+  let num-cars num-people * ( 1 - %-buses )
   create-turtles num-buses [
     set car? false
     set color yellow
@@ -64,15 +58,26 @@ to populate-city
     choose-destination
     move-to one-of patches with [pcolor = white]
   ]
+  create-turtles num-cars [
+    set car? true
+    set color blue
+    set size 1
+    set shape "car"
+    set pollution 1
+    choose-destination
+    move-to one-of patches with [pcolor = white]
+  ]
 end
 
 
 to go
   ask turtles [
-
     ask patch-here [
       set total-pollution total-pollution + [pollution] of myself
     ]
+  ]
+  ask patches with [pxcor = min-pxcor or pxcor = max-pxcor or pycor = min-pycor or pycor = max-pycor] [
+    set total-pollution total-pollution * 0.9
   ]
   diffuse total-pollution 0.5
 
@@ -143,21 +148,6 @@ NIL
 NIL
 1
 
-SLIDER
-726
-59
-898
-92
-num-cars
-num-cars
-0
-50
-4.0
-1
-1
-NIL
-HORIZONTAL
-
 BUTTON
 49
 129
@@ -193,31 +183,46 @@ NIL
 1
 
 SLIDER
-726
-110
-898
-143
-num-buses
-num-buses
-0
-20
-2.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-729
-198
-901
-231
+724
+166
+896
+199
 popular-dest-%
 popular-dest-%
 0
 100
 75.0
 10
+1
+NIL
+HORIZONTAL
+
+SLIDER
+724
+224
+896
+257
+num-people
+num-people
+10
+100
+100.0
+5
+1
+NIL
+HORIZONTAL
+
+SLIDER
+723
+126
+895
+159
+%-buses
+%-buses
+0
+1
+1.0
+0.1
 1
 NIL
 HORIZONTAL
@@ -568,6 +573,23 @@ NetLogo 6.1.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="experiment" repetitions="10" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="100"/>
+    <metric>mean [total-pollution] of patches</metric>
+    <metric>mean [total-pollution] of patches with [popular? = true]</metric>
+    <metric>mean [total-pollution] of patches with [popular? = false]</metric>
+    <enumeratedValueSet variable="popular-dest-%">
+      <value value="75"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="%-buses" first="0" step="0.1" last="1"/>
+    <enumeratedValueSet variable="num-people">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default
