@@ -6,6 +6,7 @@ turtles-own [
 patches-own [
   total-pollution
   popular?
+  road?
 ]
 globals [
   car-poll
@@ -22,6 +23,7 @@ to setup
   set bus-poll 3
   set people-per-bus 30
   populate-city
+  reset-ticks
 end
 
 to create-city
@@ -42,6 +44,10 @@ to create-city
       set popular? true
     ]
     set pcolor white
+    set road? true
+  ]
+  ask patches with [pxcor mod 5 != 0 and pycor mod 5 != 0] [
+    set road? false
   ]
 end
 
@@ -56,7 +62,7 @@ to populate-city
     set size 1
     set pollution 2
     choose-destination
-    move-to one-of patches with [pcolor = white]
+    move-to one-of patches with [road? = true]
   ]
   create-turtles num-cars [
     set car? true
@@ -65,7 +71,7 @@ to populate-city
     set shape "car"
     set pollution 1
     choose-destination
-    move-to one-of patches with [pcolor = white]
+    move-to one-of patches with [road? = true]
   ]
 end
 
@@ -77,31 +83,43 @@ to go
     ]
   ]
   ask patches with [pxcor = min-pxcor or pxcor = max-pxcor or pycor = min-pycor or pycor = max-pycor] [
-    set total-pollution total-pollution * 0.9
+    set total-pollution total-pollution * 0.95
   ]
+  update-heat-map
   diffuse total-pollution 0.5
 
   move-turtles-to-destination
+  tick
 end
+
+to update-heat-map [
+  ask patches with [road? = false and pcolor != blue and pcolor != red] [
+    set pcolor (total-pollution * 0.70) + 75
+  ]
+]
 
 to choose-destination
   ifelse random 100 < popular-dest-% [
     set destination one-of patches with [popular? = true]
   ] [
-    set destination one-of patches with [pcolor = white]
+    set destination one-of patches with [road? = true]
   ]
 end
 
 ;; taken from Traffic Grid Goal models library
 to move-turtles-to-destination
   ask turtles [
-    let choices neighbors with [ pcolor = white ]
+    let choices neighbors with [ road? = true ]
     let choice min-one-of choices [ distance [ destination ] of myself ]
     move-to choice
     if patch-here = destination [
       choose-destination
     ]
   ]
+end
+
+to-report average-pollution
+  report mean[total-pollution] of patches
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -183,25 +201,25 @@ NIL
 1
 
 SLIDER
-724
-166
-896
-199
+658
+253
+830
+286
 popular-dest-%
 popular-dest-%
 0
 100
-75.0
-10
+100.0
+1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-724
-224
-896
-257
+657
+306
+829
+339
 num-people
 num-people
 10
@@ -213,19 +231,37 @@ NIL
 HORIZONTAL
 
 SLIDER
-723
-126
-895
-159
+658
+207
+830
+240
 %-buses
 %-buses
 0
 1
-1.0
-0.1
+0.2
+0.05
 1
 NIL
 HORIZONTAL
+
+PLOT
+658
+36
+858
+186
+Average Pollution (CO)
+Time
+CO
+0.0
+50.0
+0.0
+40.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -2674135 true "" "plot average-pollution"
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -569,7 +605,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.1.0
+NetLogo 6.2.2
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
@@ -584,7 +620,20 @@ NetLogo 6.1.0
     <enumeratedValueSet variable="popular-dest-%">
       <value value="75"/>
     </enumeratedValueSet>
-    <steppedValueSet variable="%-buses" first="0" step="0.1" last="1"/>
+    <steppedValueSet variable="%-buses" first="0" step="0.05" last="1"/>
+    <enumeratedValueSet variable="num-people">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="popular-dest" repetitions="10" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="125"/>
+    <metric>mean [total-pollution] of patches</metric>
+    <steppedValueSet variable="popular-dest-%" first="0" step="1" last="100"/>
+    <enumeratedValueSet variable="%-buses">
+      <value value="0.2"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="num-people">
       <value value="100"/>
     </enumeratedValueSet>
