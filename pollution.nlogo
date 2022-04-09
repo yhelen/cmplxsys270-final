@@ -30,7 +30,7 @@ to setup
   ; pollution ratio of cars to buses of CO
   set car-poll 2
   set bus-poll 3
-  set people-per-bus 30
+  set people-per-bus 20
   spawn-vehicles
   spawn-people
   reset-ticks
@@ -153,7 +153,19 @@ end
 
 to update-heat-map
   ask patches with [road? = false and pcolor != orange and pcolor != red] [
-    set pcolor (total-pollution * 0.70) + 75
+    let poll (total-pollution / 3)
+    if poll < 20 [
+      set pcolor scale-color blue poll 0 20
+    ]
+    if poll >= 20 and poll < 40 [
+      set pcolor scale-color green poll 20 40
+    ]
+    if poll >= 40 and poll < 60 [
+      set pcolor scale-color orange poll 40 60
+    ]
+    if poll >= 60 and poll < 80 [
+      set pcolor scale-color red poll 60 80
+    ]
   ]
 end
 
@@ -272,7 +284,7 @@ popular-dest-%
 popular-dest-%
 0
 100
-70.0
+100.0
 5
 1
 NIL
@@ -287,7 +299,7 @@ num-people
 num-people
 10
 200
-35.0
+200.0
 5
 1
 NIL
@@ -302,7 +314,7 @@ SLIDER
 %-buses
 0
 1
-0.5
+0.0
 0.05
 1
 NIL
@@ -335,7 +347,7 @@ ticks-at-dest
 ticks-at-dest
 0
 50
-25.0
+20.0
 5
 1
 NIL
@@ -738,7 +750,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.1.0
+NetLogo 6.2.2
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
