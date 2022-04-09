@@ -67,6 +67,9 @@ to spawn-people
     set color grey
     set destination one-of patches with [road? = true]
     move-to one-of patches with [road? = true]
+    if not show-people [
+      ht
+    ]
   ]
 end
 
@@ -371,6 +374,17 @@ num-vehicles
 1
 NIL
 HORIZONTAL
+
+SWITCH
+683
+368
+831
+401
+show-people
+show-people
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
