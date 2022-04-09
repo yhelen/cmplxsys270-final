@@ -63,6 +63,7 @@ end
 
 to spawn-people
   create-people num-people [
+    set size 0.5
     set shape "person"
     set color grey
     set destination one-of patches with [road? = true]
@@ -75,8 +76,8 @@ end
 
 to spawn-vehicles
   ; set up vehicles
-  let num-buses ceiling ( %-buses * num-vehicles / people-per-bus )
-  let num-cars num-vehicles * ( 1 - %-buses )
+  let num-buses ceiling ( %-buses * num-vehicle-users / people-per-bus )
+  let num-cars num-vehicle-users * ( 1 - %-buses )
   create-vehicles num-buses [
     set car? false
     set color yellow
@@ -100,7 +101,9 @@ end
 
 to go
   update-pollution
-  update-heat-map
+  if heat-map [
+    update-heat-map
+  ]
   diffuse total-pollution 0.5
   move-people
   move-vehicles-to-destination
@@ -181,10 +184,6 @@ end
 to-report average-exposure
   report mean[total-exposure / ticks] of people
 end
-
-;to-report average-exposure-per-tick
-;  report mean ([total-exposure / ticks ] of people )
-;end
 @#$#@#$#@
 GRAPHICS-WINDOW
 202
@@ -273,8 +272,8 @@ popular-dest-%
 popular-dest-%
 0
 100
-100.0
-1
+70.0
+5
 1
 NIL
 HORIZONTAL
@@ -303,7 +302,7 @@ SLIDER
 %-buses
 0
 1
-0.2
+0.5
 0.05
 1
 NIL
@@ -361,15 +360,15 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot average-exposure"
 
 SLIDER
-19
-321
-191
-354
-num-vehicles
-num-vehicles
-1
+9
+323
+196
+356
+num-vehicle-users
+num-vehicle-users
+0
 100
-50.0
+100.0
 5
 1
 NIL
@@ -382,7 +381,18 @@ SWITCH
 401
 show-people
 show-people
+0
 1
+-1000
+
+SWITCH
+684
+422
+810
+455
+heat-map
+heat-map
+0
 1
 -1000
 
