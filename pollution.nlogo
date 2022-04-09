@@ -1,7 +1,16 @@
+breed [vehicles vehicle]
+breed [people person]
+
 turtles-own [
-  car?
   destination
+]
+vehicles-own [
+  car?
   pollution
+]
+people-own [
+  total-exposure
+  ticks-since-here
 ]
 patches-own [
   total-pollution
@@ -22,7 +31,8 @@ to setup
   set car-poll 2
   set bus-poll 3
   set people-per-bus 30
-  populate-city
+  spawn-vehicles
+  spawn-people
   reset-ticks
 end
 
@@ -32,7 +42,7 @@ to create-city
     set popular? false
   ]
   ;mall
-  ask patches with [pxcor < -5 and pxcor > -10 and pycor < 10 and pycor > 5] [
+  ask patches with [pxcor < 0 and pxcor > -5 and pycor < 10 and pycor > 5] [
     set pcolor blue
   ]
   ;office
@@ -51,33 +61,81 @@ to create-city
   ]
 end
 
-to populate-city
+to spawn-people
+  create-people num-people [
+    set shape "person"
+    set color grey
+    set destination one-of patches with [road? = true]
+    move-to one-of patches with [road? = true]
+  ]
+end
+
+to spawn-vehicles
   ; set up vehicles
-  let num-buses ceiling ( %-buses * num-people / people-per-bus )
-  let num-cars num-people * ( 1 - %-buses )
-  create-turtles num-buses [
+  let num-buses ceiling ( %-buses * num-vehicles / people-per-bus )
+  let num-cars num-vehicles * ( 1 - %-buses )
+  create-vehicles num-buses [
     set car? false
     set color yellow
     set shape "truck"
     set size 1
-    set pollution 2
-    choose-destination
+    set pollution bus-poll
+    choose-vehicle-destination
     move-to one-of patches with [road? = true]
   ]
-  create-turtles num-cars [
+  create-vehicles num-cars [
     set car? true
     set color blue
     set size 1
     set shape "car"
-    set pollution 1
-    choose-destination
+    set pollution car-poll
+    choose-vehicle-destination
     move-to one-of patches with [road? = true]
   ]
 end
 
 
 to go
-  ask turtles [
+  update-pollution
+  update-heat-map
+  diffuse total-pollution 0.5
+  move-people
+  move-vehicles-to-destination
+  tick
+end
+
+to move-people
+  ask people [
+    ifelse patch-here = destination [
+      if ticks - ticks-since-here > ticks-at-dest  [
+        set ticks-since-here 0
+        choose-people-destination
+      ]
+    ] [
+      let choices neighbors with [ road? = true ]
+      let choice min-one-of choices [ distance [ destination ] of myself ]
+      face choice
+      forward 0.5
+      if patch-here = destination [
+        set ticks-since-here ticks
+        move-to one-of neighbors with [road? = false]
+      ]
+    ]
+    set total-exposure total-exposure + [total-pollution] of patch-here
+  ]
+end
+
+to choose-people-destination
+  let people-popular-% max (list 0 (popular-dest-% - 5))
+  ifelse random 100 < people-popular-% [
+    set destination one-of patches with [popular? = true]
+  ] [
+    set destination one-of patches with [road? = true]
+  ]
+end
+
+to update-pollution
+    ask vehicles [
     ask patch-here [
       set total-pollution total-pollution + [pollution] of myself
     ]
@@ -85,20 +143,15 @@ to go
   ask patches with [pxcor = min-pxcor or pxcor = max-pxcor or pycor = min-pycor or pycor = max-pycor] [
     set total-pollution total-pollution * 0.95
   ]
-  update-heat-map
-  diffuse total-pollution 0.5
-
-  move-turtles-to-destination
-  tick
 end
 
-to update-heat-map [
+to update-heat-map
   ask patches with [road? = false and pcolor != blue and pcolor != red] [
     set pcolor (total-pollution * 0.70) + 75
   ]
-]
+end
 
-to choose-destination
+to choose-vehicle-destination
   ifelse random 100 < popular-dest-% [
     set destination one-of patches with [popular? = true]
   ] [
@@ -107,13 +160,13 @@ to choose-destination
 end
 
 ;; taken from Traffic Grid Goal models library
-to move-turtles-to-destination
-  ask turtles [
+to move-vehicles-to-destination
+  ask vehicles [
     let choices neighbors with [ road? = true ]
     let choice min-one-of choices [ distance [ destination ] of myself ]
     move-to choice
     if patch-here = destination [
-      choose-destination
+      choose-vehicle-destination
     ]
   ]
 end
@@ -121,6 +174,14 @@ end
 to-report average-pollution
   report mean[total-pollution] of patches
 end
+
+to-report average-exposure
+  report mean[total-exposure / ticks] of people
+end
+
+;to-report average-exposure-per-tick
+;  report mean ([total-exposure / ticks ] of people )
+;end
 @#$#@#$#@
 GRAPHICS-WINDOW
 202
@@ -143,17 +204,17 @@ GRAPHICS-WINDOW
 16
 -16
 16
-0
-0
+1
+1
 1
 ticks
 30.0
 
 BUTTON
-31
-57
-97
-90
+64
+59
+130
+92
 NIL
 setup\n
 NIL
@@ -167,10 +228,10 @@ NIL
 1
 
 BUTTON
-49
-129
-112
-162
+67
+131
+130
+164
 NIL
 go
 NIL
@@ -184,10 +245,10 @@ NIL
 1
 
 BUTTON
-48
-173
-111
-206
+66
+175
+129
+208
 NIL
 go
 T
@@ -201,10 +262,10 @@ NIL
 1
 
 SLIDER
-658
-253
-830
-286
+20
+276
+192
+309
 popular-dest-%
 popular-dest-%
 0
@@ -216,25 +277,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-657
-306
-829
-339
+18
+368
+190
+401
 num-people
 num-people
 10
-100
-100.0
+200
+35.0
 5
 1
 NIL
 HORIZONTAL
 
 SLIDER
-658
-207
-830
-240
+20
+230
+192
+263
 %-buses
 %-buses
 0
@@ -262,6 +323,54 @@ false
 "" ""
 PENS
 "default" 1.0 0 -2674135 true "" "plot average-pollution"
+
+SLIDER
+18
+413
+190
+446
+ticks-at-dest
+ticks-at-dest
+0
+50
+25.0
+5
+1
+NIL
+HORIZONTAL
+
+PLOT
+657
+197
+857
+347
+Average Exposure per Tick
+Time
+Avg Exposure per Tick
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot average-exposure"
+
+SLIDER
+19
+321
+191
+354
+num-vehicles
+num-vehicles
+1
+100
+50.0
+5
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -605,7 +714,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.2.2
+NetLogo 6.1.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
