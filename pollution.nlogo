@@ -43,7 +43,7 @@ to create-city
   ]
   ;mall
   ask patches with [pxcor < 0 and pxcor > -5 and pycor < 10 and pycor > 5] [
-    set pcolor blue
+    set pcolor orange
   ]
   ;office
   ask patches with [pxcor < 10 and pxcor > 5 and pycor < 0 and pycor > -10] [
@@ -149,7 +149,7 @@ to update-pollution
 end
 
 to update-heat-map
-  ask patches with [road? = false and pcolor != blue and pcolor != red] [
+  ask patches with [road? = false and pcolor != orange and pcolor != red] [
     set pcolor (total-pollution * 0.70) + 75
   ]
 end
